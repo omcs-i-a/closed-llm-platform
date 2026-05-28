@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the intended architecture for the Closed Local LLM Platform before M1 implementation.
+This document describes the current M1 architecture for the Closed Local LLM Platform and the staged direction for later milestones.
 
 The architecture is intentionally staged. M1 creates the smallest runnable path. Later milestones add security, retrieval, auditability, and access control.
 
@@ -44,7 +44,7 @@ M1 uses Streamlit for the UI entrypoint. Next.js can be revisited in a later UI 
 
 ## M1 Container / Runtime View
 
-Exact ports may change during implementation, but the intended local development shape is:
+The current local development shape is:
 
 ```mermaid
 flowchart TB
@@ -64,12 +64,8 @@ flowchart TB
   ApiContainer -->|Ollama API| OllamaRuntime
 ```
 
-Implementation decision to make in M1:
-
-- Option A: run Ollama on the host and document it as a prerequisite.
-- Option B: include Ollama in `compose.yml`.
-
-M1 can choose either, but the README must clearly document the chosen path.
+M1 decision: Ollama runs as a host service and is reached from the API container via `host.docker.internal:11434`.
+Compose-managed Ollama is intentionally deferred.
 
 ## Component Responsibilities
 
@@ -236,12 +232,10 @@ Future boundaries:
 | basic chat path | Streamlit -> API -> Ollama -> API -> Streamlit |
 | README with Mermaid architecture | README diagram stays aligned with this file |
 
-## Open Decisions for M1
+## M1 Decisions
 
 - Ollama runs as host service for M1; Compose-managed Ollama is deferred.
-- Exact route shape for `POST /chat`.
+- `POST /chat` accepts a minimal JSON request with a `message` field and returns `message`, `model`, and `request_id`.
 - uv and src-layout are the Python project standard.
 - Streamlit is the M1 UI; Next.js is deferred.
-- Minimal test framework setup in M1.
-
-These should be resolved in the M1 implementation plan before application code is written.
+- pytest and ruff are the M1 verification baseline.

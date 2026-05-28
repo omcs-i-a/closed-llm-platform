@@ -4,7 +4,7 @@ This roadmap keeps the project milestone-bound. The first goal is not to build a
 
 ## Current State
 
-Status: M1 implementation in progress.
+Status: M1 implemented and locally verified.
 
 Created design targets:
 
@@ -14,7 +14,9 @@ Created design targets:
 - `docs/roadmap.md`
 - `docs/threat-model.md`
 
-No application code has been written yet.
+M1 now includes a runnable FastAPI gateway, Streamlit UI, Docker/Compose wiring,
+and a host-Ollama chat path. The current verified model for local smoke testing is
+`qwen3:8b`; change `OLLAMA_MODEL` if your local Ollama runtime uses another model.
 
 ## Milestone Principles
 
@@ -93,12 +95,12 @@ Exact paths should be confirmed in the M1 implementation plan.
 
 ### Acceptance Criteria
 
-- `docker compose -f compose.yml up --build` starts the local services.
-- FastAPI `GET /health` returns HTTP 200.
-- UI can send a chat request to the API.
-- API can call Ollama, or README clearly documents the local Ollama prerequisite.
-- README explains why local/closed LLM design matters.
-- No secrets or real personal data are committed.
+- [x] `docker compose -f compose.yml up --build` starts the local services.
+- [x] FastAPI `GET /health` returns HTTP 200.
+- [x] UI can send a chat request to the API.
+- [x] API can call Ollama, with Ollama documented as a host service prerequisite.
+- [x] README explains why local/closed LLM design matters.
+- [x] No secrets or real personal data are committed.
 
 ### Suggested Verification Commands
 

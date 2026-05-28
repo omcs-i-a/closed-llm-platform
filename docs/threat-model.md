@@ -1,6 +1,6 @@
 # Threat Model
 
-This is an initial threat model for the Closed Local LLM Platform before M1 implementation.
+This is the initial threat model for the Closed Local LLM Platform as of M1.
 
 It is intentionally practical and milestone-aware. M1 will not solve every risk, but the design should leave clear places to add controls.
 
@@ -280,22 +280,22 @@ Rules:
 
 ## M1 Security Checklist
 
-Before declaring M1 complete:
+M1 checklist status:
 
-- [ ] README documents whether Ollama runs on host or in Docker Compose.
-- [ ] Ollama is not presented as the public user-facing API.
-- [ ] `/health` does not leak sensitive environment details.
-- [ ] Chat endpoint has basic input validation.
-- [ ] No secrets or real personal data are committed.
-- [ ] Docker Compose does not expose unnecessary ports.
-- [ ] README limitations mention that guardrails/RBAC/RAG/audit logging are not complete in M1.
+- [x] README documents that Ollama runs as a host service for M1.
+- [x] Ollama is not presented as the public user-facing API.
+- [x] `/health` does not leak sensitive environment details.
+- [x] Chat endpoint has basic input validation.
+- [x] No secrets or real personal data are committed.
+- [x] Docker Compose exposes only API and Streamlit ports.
+- [x] README limitations mention that guardrails/RBAC/RAG/audit logging are not complete in M1.
 
 ## Open Questions
 
-Resolve during or before M1 implementation:
+Resolved during M1:
 
-- Should Ollama be managed by Compose or assumed as a host service?
-- What maximum prompt size should M1 accept?
-- What minimal request/response schema should `POST /chat` use?
-- Should request IDs be added in M1 even before durable audit logging?
-- Which dependency management tools should be used for reproducibility?
+- Ollama is assumed as a host service for M1.
+- M1 keeps request validation minimal; stricter prompt-size limits are deferred to M2.
+- `POST /chat` uses a minimal request/response schema around `message`, `model`, and `request_id`.
+- Request IDs are included in M1 responses before durable audit logging.
+- uv, `pyproject.toml`, and `uv.lock` are used for reproducibility.

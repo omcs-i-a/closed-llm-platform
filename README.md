@@ -4,7 +4,7 @@ Hermes Agent と一緒に、closed/local LLM platform の設計と実装を段�
 
 このプロジェクトでは、FastAPI gateway、Streamlit UI、Ollama によるローカル推論、RAG、guardrails、PII masking、audit logging、RBAC を、小さな runnable milestone に分けて実装しながら学びます。
 
-現時点では M1 の最小実装として、FastAPI health/chat path、Streamlit UI、uv project、Dockerfile、compose.yml を置いています。
+現時点では M1 の最小実装として、FastAPI health/chat path、Streamlit UI、uv project、Dockerfile、compose.yml を実装し、Docker Compose と host Ollama で検証しています。
 
 ## Why This Project Matters
 
@@ -94,7 +94,12 @@ flowchart LR
 
 ## Quick Start
 
-M1 実装後に runnable command を確定します。
+Prerequisite: Ollama を host service として起動し、使いたい model を pull しておきます。
+
+```bash
+ollama serve
+ollama pull qwen3:8b
+```
 
 基本コマンド:
 
@@ -102,17 +107,20 @@ M1 実装後に runnable command を確定します。
 # from repository root
 uv sync
 
-# run API after M1 implementation
+# run API
 uv run uvicorn app.api.main:app --host 0.0.0.0 --port 8000 --reload
 
-# run Streamlit UI after M1 implementation
+# run Streamlit UI
 uv run streamlit run app/streamlit/main.py
 
-# Docker Compose path after M1 implementation
-docker compose -f compose.yml up --build
+# Docker Compose path, using a locally available Ollama model
+OLLAMA_MODEL=qwen3:8b docker compose -f compose.yml up --build
 
 # health check
 curl http://localhost:8000/health
+
+# chat smoke test
+OLLAMA_MODEL=qwen3:8b uv run python scripts/smoke_api.py
 ```
 
 現時点では M1 の FastAPI health/chat path、Streamlit UI、Dockerfile、`compose.yml` の初期実装があります。Ollama は host service prerequisite です。
@@ -222,7 +230,7 @@ docker compose -f compose.yml up --build
 
 詳細は `docs/roadmap.md` を参照してください。
 
-- [ ] M1: UI/API/Ollama/Compose の basic path
+- [x] M1: UI/API/Ollama/Compose の basic path
 - [ ] M2: guardrails、PII masking、audit logging baseline
 - [ ] M3: RAG ingestion/retrieval/citations
 - [ ] M4: RBAC and observability
