@@ -80,10 +80,14 @@ flowchart LR
 
 ## Tech Stack
 
-- Frontend: Next.js, TypeScript
-- Backend: FastAPI, Python
+- App entrypoints: `app/api` for FastAPI, `app/streamlit` for Streamlit
+- Reusable Python package: `src/closed_llm_platform`
+- Backend/API: FastAPI, Python
+- UI: Streamlit for M1; Next.js can be revisited in a later UI milestone
 - Local LLM runtime: Ollama
-- Infra: Docker Compose
+- Dependency management: uv with `pyproject.toml` and `uv.lock`
+- Infra: Docker, `compose.yml`, VS Code devcontainer
+- Testing: pytest, ruff
 - RAG: planned vector store and retrieval layer
 - Data/audit: planned PostgreSQL or local durable store
 - Security controls: planned guardrails, PII masking, RBAC, audit logging
@@ -96,13 +100,22 @@ M1 実装後に runnable command を確定します。
 
 ```bash
 # from repository root
-docker compose up --build
+uv sync
+
+# run API after M1 implementation
+uv run uvicorn app.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+# run Streamlit UI after M1 implementation
+uv run streamlit run app/streamlit/main.py
+
+# Docker Compose path after M1 implementation
+docker compose -f compose.yml up --build
 
 # health check
 curl http://localhost:8000/health
 ```
 
-現時点では設計ドキュメントのみです。まだ `docker-compose.yml`、API、UI の実装はありません。
+現時点では設計ドキュメントと repository foundation のみです。まだ FastAPI/Streamlit のアプリ実装はありません。Compose file は `compose.yml` として作成予定です。
 
 ## API Plan
 
@@ -119,23 +132,42 @@ M1 実装後の想定構成です。
 
 ```text
 closed-llm-platform/
-  README.md
-  AGENTS.md
-  docker-compose.yml
+  .devcontainer/
+    devcontainer.json
+  .github/
+    ISSUE_TEMPLATE/
+    PULL_REQUEST_TEMPLATE.md
+  .streamlit/
+    config.toml
+  app/
+    api/
+    streamlit/
+  data/
   docs/
     architecture.md
     roadmap.md
+    setup.md
     threat-model.md
-    decisions/
-  apps/
-    api/
-    web/
-  packages/
-    guardrails/
-    rag/
-  data/
-    sample-docs/
+    plans/
+  model/
+  notebook/
+  outputs/
+  scripts/
+  src/
+    closed_llm_platform/
+  tests/
+  .env.example
+  .gitignore
+  AGENTS.md
+  Dockerfile
+  LICENSE
+  README.md
+  compose.yml
+  pyproject.toml
+  uv.lock
 ```
+
+`src/closed_llm_platform/` contains reusable, testable code. `app/` contains executable application entrypoints such as FastAPI and Streamlit. `scripts/` contains helper commands that reuse `src/` code. `data/`, `model/`, and `outputs/` are local/generated artifact areas and should avoid real private data.
 
 ## Security Considerations
 

@@ -31,15 +31,19 @@ No application code has been written yet.
 Understand the basic closed/local LLM application path:
 
 ```text
-Next.js UI -> FastAPI gateway -> Ollama local runtime -> response back to UI
+Streamlit UI -> FastAPI gateway -> Ollama local runtime -> response back to UI
 ```
+
+M1 uses a Python src-layout repository with uv, `app/` executable entrypoints, root `tests/`, Docker/Compose, and VS Code devcontainer support.
 
 ### Scope
 
-- Next.js UI skeleton
+- Streamlit UI skeleton
 - FastAPI API skeleton
 - `GET /health`
-- Docker Compose wiring
+- uv project setup with `pyproject.toml` and `uv.lock`
+- Docker/Compose wiring with `compose.yml`
+- VS Code devcontainer support
 - Ollama connection path
 - basic chat request/response path
 - README with Mermaid architecture
@@ -49,20 +53,40 @@ Next.js UI -> FastAPI gateway -> Ollama local runtime -> response back to UI
 Likely files to create during M1:
 
 ```text
-docker-compose.yml
-apps/api/
-  Dockerfile
-  requirements.txt or pyproject.toml
-  app/
+.devcontainer/
+  devcontainer.json
+.github/
+  ISSUE_TEMPLATE/
+  PULL_REQUEST_TEMPLATE.md
+.streamlit/
+  config.toml
+app/
+  api/
     main.py
-    settings.py
+  streamlit/
+    main.py
+src/
+  closed_llm_platform/
+    config.py
     schemas.py
-  tests/
-apps/web/
-  Dockerfile
-  package.json
-  next.config.*
-  app/ or src/
+    ollama_client.py
+    chat_service.py
+tests/
+  test_health.py
+  test_chat.py
+  test_ollama_client.py
+scripts/
+  smoke_api.py
+data/
+model/
+notebook/
+outputs/
+Dockerfile
+compose.yml
+pyproject.toml
+uv.lock
+.env.example
+.gitignore
 ```
 
 Exact paths should be confirmed in the M1 implementation plan.
@@ -79,18 +103,21 @@ Exact paths should be confirmed in the M1 implementation plan.
 ### Suggested Verification Commands
 
 ```bash
-# Start stack
-docker compose up --build
+# Python setup and tests
+uv sync
+uv run pytest -q
+
+# Start API
+uv run uvicorn app.api.main:app --host 0.0.0.0 --port 8000 --reload
 
 # Health check
 curl -i http://localhost:8000/health
 
-# API tests, once tests exist
-pytest
+# Start Streamlit UI
+uv run streamlit run app/streamlit/main.py
 
-# Web checks, once web app exists
-npm run lint
-npm run build
+# Compose smoke test
+docker compose -f compose.yml up --build
 ```
 
 ### M1 Implementation Plan

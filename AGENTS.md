@@ -41,10 +41,12 @@ Do not write application code until the user asks to begin M1 implementation.
 
 M1 is the first runnable milestone:
 
-- Next.js UI skeleton
+- Streamlit UI skeleton
 - FastAPI API skeleton
 - `GET /health`
-- Docker Compose wiring
+- uv Python project with `src/closed_llm_platform`
+- Docker/Compose wiring via `compose.yml`
+- VS Code devcontainer support
 - Ollama connection path
 - basic chat request/response path
 - README with Mermaid architecture
@@ -63,14 +65,17 @@ closed-llm-platform/
     roadmap.md
     threat-model.md
     decisions/
-  apps/
+  app/
     api/
-    web/
-  packages/
-    guardrails/
-    rag/
+    streamlit/
+  src/
+    closed_llm_platform/
+  tests/
+  scripts/
   data/
-    sample-docs/
+  model/
+  notebook/
+  outputs/
 ```
 
 ## Working Rules for Hermes Agent
@@ -104,7 +109,7 @@ closed-llm-platform/
 
 ## M1 Implementation Guardrail
 
-When the user asks to implement M1, the first response should create or update an M1 plan before writing code. The plan should include:
+When the user asks to implement M1, first ensure the M1 plan matches the repository structure: uv, src-layout Python package under `src/closed_llm_platform`, executable apps under `app/api` and `app/streamlit`, root `tests/`, root `Dockerfile`, and `compose.yml`. The plan should include:
 
 - exact file paths
 - small tasks

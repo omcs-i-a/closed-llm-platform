@@ -1,0 +1,38 @@
+[project]
+name = "closed-llm-platform"
+version = "0.1.0"
+description = "Closed/local LLM platform learning project with FastAPI, Streamlit, Ollama, guardrails, RAG, audit logging, and RBAC milestones."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.115.6",
+    "httpx==0.28.1",
+    "pydantic-settings==2.7.1",
+    "streamlit==1.41.1",
+    "uvicorn[standard]==0.34.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==8.3.4",
+    "pytest-asyncio==0.25.2",
+    "ruff==0.9.2",
+]
+
+[tool.uv]
+package = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src"]
+testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

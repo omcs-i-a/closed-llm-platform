@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node / frontend experiments
+node_modules/
+.next/
+out/
+
+# Generated/local artifacts
+outputs/*
+!outputs/.gitkeep
+model/*
+!model/.gitkeep
+data/*
+!data/.gitkeep
+
+# OS/editor
+.DS_Store
+.vscode/
+
+# Logs
+*.log

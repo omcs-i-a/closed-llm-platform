@@ -31,14 +31,16 @@ Those are intentionally deferred so the basic UI/API/Ollama path can work first.
 
 ```mermaid
 flowchart LR
-  Browser[Browser] --> Web[Next.js UI]
-  Web -->|HTTP JSON| API[FastAPI Gateway]
+  Browser[Browser] --> UI[Streamlit UI]
+  UI -->|HTTP JSON| API[FastAPI Gateway]
   API -->|GET /health| Health[Health Handler]
   API -->|POST /chat| Chat[Chat Handler]
   Chat -->|HTTP API| Ollama[Ollama Local Runtime]
   Ollama -->|LLM response| Chat
-  Chat -->|JSON response| Web
+  Chat -->|JSON response| UI
 ```
+
+M1 uses Streamlit for the UI entrypoint. Next.js can be revisited in a later UI milestone if a richer frontend is useful.
 
 ## M1 Container / Runtime View
 
@@ -50,15 +52,15 @@ flowchart TB
     Browser[Browser]
 
     subgraph Compose[Docker Compose project]
-      WebContainer[web\nNext.js]
+      StreamlitContainer[streamlit\nStreamlit UI]
       ApiContainer[api\nFastAPI]
     end
 
-    OllamaRuntime[Ollama\nlocal service or container]
+    OllamaRuntime[Ollama\nhost service for M1]
   end
 
-  Browser -->|localhost web port| WebContainer
-  WebContainer -->|API base URL| ApiContainer
+  Browser -->|localhost:8501| StreamlitContainer
+  StreamlitContainer -->|API_BASE_URL| ApiContainer
   ApiContainer -->|Ollama API| OllamaRuntime
 ```
 
@@ -71,20 +73,21 @@ M1 can choose either, but the README must clearly document the chosen path.
 
 ## Component Responsibilities
 
-### Next.js UI
+### Streamlit UI
 
 M1 responsibility:
 
 - Render a minimal chat interface.
 - Send a prompt to the FastAPI gateway.
-- Display the response or error state.
+- Display the response, model name, request ID, or error state.
 
 Later responsibility:
 
 - Show citations for RAG answers.
-- Show role-aware controls.
-- Provide admin/auditor views if needed.
+- Show role-aware controls if needed.
 - Surface trace/audit IDs for debugging.
+
+Next.js was part of the initial sketch, but M1 now uses Streamlit to match the requested Python/uv/src-layout project structure.
 
 ### FastAPI Gateway
 
@@ -224,20 +227,21 @@ Future boundaries:
 
 | Requirement | Architecture implication |
 |-------------|--------------------------|
-| Next.js UI skeleton | `apps/web` service/container |
-| FastAPI API skeleton | `apps/api` service/container |
+| Streamlit UI skeleton | `app/streamlit` executable UI entrypoint |
+| FastAPI API skeleton | `app/api` executable API entrypoint |
+| Reusable Python code | `src/closed_llm_platform` package |
 | `/health` endpoint | API health handler |
-| Docker Compose wiring | local reproducible web + api services |
-| Ollama connection path | API can reach configured Ollama endpoint |
-| basic chat path | UI -> API -> Ollama -> API -> UI |
+| Docker Compose wiring | `compose.yml` with local reproducible streamlit + api services |
+| Ollama connection path | API can reach configured host Ollama endpoint |
+| basic chat path | Streamlit -> API -> Ollama -> API -> Streamlit |
 | README with Mermaid architecture | README diagram stays aligned with this file |
 
 ## Open Decisions for M1
 
-- Whether Ollama runs on host or in Compose.
+- Ollama runs as host service for M1; Compose-managed Ollama is deferred.
 - Exact route shape for `POST /chat`.
-- Whether to use npm, pnpm, or another package manager for Next.js.
-- Python dependency tool for FastAPI: plain `requirements.txt`, `uv`, or Poetry.
+- uv and src-layout are the Python project standard.
+- Streamlit is the M1 UI; Next.js is deferred.
 - Minimal test framework setup in M1.
 
 These should be resolved in the M1 implementation plan before application code is written.
