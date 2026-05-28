@@ -1,0 +1,17 @@
+{
+  // Pythonのデフォルトのインタプリタパス
+  "python.defaultInterpreterPath": "/usr/local/bin/python",
+  "[python]": {
+    // ファイルの保存時にフォーマットを実行する
+    "editor.formatOnSave": true,
+    // ファイルの保存時のアクションを設定する
+    "editor.codeActionsOnSave": {
+      // リンター機能の実行し、修正可能なエラーを修正する
+      "source.fixAll.ruff": "explicit",
+      // インポート文の整理を行う
+      "source.organizeImports.ruff": "explicit"
+    },
+    // Ruffをフォーマッターとして利用する
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  }
+}
