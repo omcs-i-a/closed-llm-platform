@@ -23,7 +23,7 @@ Do not frame the work mainly as a marketing portfolio artifact. Prefer learning-
 
 ## Current Phase
 
-Current phase: pre-M1 documentation.
+Current phase: M1 implementation.
 
 The initial documentation files are:
 
@@ -59,7 +59,7 @@ Keep M1 small. The goal is a working local path, not a complete platform.
 closed-llm-platform/
   README.md
   AGENTS.md
-  docker-compose.yml
+  compose.yml
   docs/
     architecture.md
     roadmap.md

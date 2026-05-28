@@ -2,7 +2,7 @@
 
 This document describes the intended local development setup for the Closed Local LLM Platform.
 
-Current status: M1 foundation and implementation planning. Commands will be verified as M1 code is added.
+Current status: M1 has an initial FastAPI health/chat path, Streamlit UI, uv project setup, Dockerfile, and compose.yml. Docker/Ollama end-to-end verification still depends on local Docker and Ollama services running.
 
 ## Required Tools
 

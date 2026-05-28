@@ -2,9 +2,9 @@
 
 Hermes Agent と一緒に、closed/local LLM platform の設計と実装を段階的に理解するための学習用実装リポジトリです。
 
-このプロジェクトでは、FastAPI gateway、Next.js UI、Ollama によるローカル推論、RAG、guardrails、PII masking、audit logging、RBAC を、小さな runnable milestone に分けて実装しながら学びます。
+このプロジェクトでは、FastAPI gateway、Streamlit UI、Ollama によるローカル推論、RAG、guardrails、PII masking、audit logging、RBAC を、小さな runnable milestone に分けて実装しながら学びます。
 
-現時点では M1 実装前の設計ドキュメントのみを置いています。アプリケーションコードはまだありません。
+現時点では M1 の最小実装として、FastAPI health/chat path、Streamlit UI、uv project、Dockerfile、compose.yml を置いています。
 
 ## Why This Project Matters
 
@@ -24,7 +24,7 @@ M1 で目指す最小構成です。M2 以降の要素も、拡張先として�
 
 ```mermaid
 flowchart LR
-  User[User] --> UI[Next.js UI]
+  User[User] --> UI[Streamlit UI]
   UI --> API[FastAPI Gateway]
   API --> Health[GET /health]
   API --> Chat[POST /chat]
@@ -54,7 +54,7 @@ flowchart LR
 
 ## Why This Design?
 
-- Next.js UI は、ユーザーが closed/local LLM platform を触る入口として使います。M1 では最小の chat UI skeleton に留めます。
+- Streamlit UI は、ユーザーが closed/local LLM platform を触る入口として使います。M1 では Python/uv ベースの最小 chat UI に留めます。Next.js は必要になった時点で後続 milestone として検討します。
 - FastAPI gateway は、UI と local model runtime の間に置く制御点です。将来の guardrails、PII masking、RAG、RBAC、audit logging をここに集約します。
 - Ollama は local inference runtime として使います。M1 では接続経路を作り、モデル選択や運用上の制約は README と docs に明記します。
 - Docker Compose は、開発者が同じ構成を再現しやすくするために使います。M1 では UI/API wiring を優先し、Ollama を compose 内に含めるか host prerequisite とするかは実装時に明確化します。
@@ -64,7 +64,7 @@ flowchart LR
 
 ### M1: Smallest runnable local system
 
-- Next.js UI skeleton
+- Streamlit UI skeleton
 - FastAPI API skeleton
 - `GET /health`
 - Docker Compose wiring
@@ -96,7 +96,7 @@ flowchart LR
 
 M1 実装後に runnable command を確定します。
 
-予定コマンド:
+基本コマンド:
 
 ```bash
 # from repository root
@@ -115,7 +115,7 @@ docker compose -f compose.yml up --build
 curl http://localhost:8000/health
 ```
 
-現時点では設計ドキュメントと repository foundation のみです。まだ FastAPI/Streamlit のアプリ実装はありません。Compose file は `compose.yml` として作成予定です。
+現時点では M1 の FastAPI health/chat path、Streamlit UI、Dockerfile、`compose.yml` の初期実装があります。Ollama は host service prerequisite です。
 
 ## API Plan
 
@@ -194,26 +194,26 @@ closed-llm-platform/
 
 ## Testing / Verification Plan
 
-M1 実装時の最低限の検証予定です。
+M1 の最低限の検証コマンドです。
 
 ```bash
 # API health
 curl -i http://localhost:8000/health
 
-# API tests, once added
-pytest
+# Python tests and lint
+uv run pytest -q
+uv run ruff check .
 
-# Web lint/build, once added
-npm run lint
-npm run build
+# Streamlit UI
+uv run streamlit run app/streamlit/main.py
 
 # Compose smoke test
-docker compose up --build
+docker compose -f compose.yml up --build
 ```
 
 ## Limitations
 
-- 現時点ではアプリケーションコードはありません。
+- 現時点では M1 の最小アプリコードのみがあります。
 - M1 では production-grade authentication、authorization、guardrails、RAG、audit logging はまだ実装しません。
 - Local LLM の品質、速度、メモリ使用量は選択する Ollama model と実行環境に依存します。
 - closed/local design を学ぶための実装であり、実運用のセキュリティ保証を提供するものではありません。
@@ -233,5 +233,5 @@ docker compose up --build
 - Execution steps: `../hermes-agent-workbench/docs/execution-steps.md`
 - README template: `../hermes-agent-workbench/prompts/portfolio-project-readme-template.md`
 - FastAPI: https://fastapi.tiangolo.com/
-- Next.js: https://nextjs.org/docs
+- Streamlit: https://docs.streamlit.io/
 - Ollama: https://ollama.com/

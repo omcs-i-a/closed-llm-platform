@@ -8,7 +8,7 @@ It is intentionally practical and milestone-aware. M1 will not solve every risk,
 
 In scope:
 
-- Next.js UI
+- Streamlit UI
 - FastAPI gateway
 - Ollama local runtime connection
 - chat request/response flow
@@ -72,7 +72,7 @@ Can accidentally commit secrets, real data, or insecure defaults.
 
 ```mermaid
 flowchart LR
-  User[User / Browser] -->|untrusted input| UI[Next.js UI]
+  User[User / Browser] -->|untrusted input| UI[Streamlit UI]
   UI -->|HTTP request| API[FastAPI Gateway\ncontrol boundary]
   API -->|local model call| Ollama[Ollama Runtime]
   API -. future .-> Store[(Audit / Vector / DB Stores)]

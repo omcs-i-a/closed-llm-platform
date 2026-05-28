@@ -4,7 +4,7 @@ This roadmap keeps the project milestone-bound. The first goal is not to build a
 
 ## Current State
 
-Status: pre-M1 documentation.
+Status: M1 implementation in progress.
 
 Created design targets:
 
@@ -93,7 +93,7 @@ Exact paths should be confirmed in the M1 implementation plan.
 
 ### Acceptance Criteria
 
-- `docker compose up --build` starts the local services.
+- `docker compose -f compose.yml up --build` starts the local services.
 - FastAPI `GET /health` returns HTTP 200.
 - UI can send a chat request to the API.
 - API can call Ollama, or README clearly documents the local Ollama prerequisite.
@@ -157,9 +157,9 @@ Understand how a gateway can become a policy and accountability layer instead of
 
 ```text
 packages/guardrails/
-apps/api/app/audit.py
-apps/api/app/privacy.py
-apps/api/app/guardrails.py
+src/closed_llm_platform/audit.py
+src/closed_llm_platform/privacy.py
+src/closed_llm_platform/guardrails.py
 ```
 
 ### Acceptance Criteria

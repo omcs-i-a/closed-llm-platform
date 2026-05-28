@@ -67,7 +67,7 @@ flowchart TB
 Implementation decision to make in M1:
 
 - Option A: run Ollama on the host and document it as a prerequisite.
-- Option B: include Ollama in `docker-compose.yml`.
+- Option B: include Ollama in `compose.yml`.
 
 M1 can choose either, but the README must clearly document the chosen path.
 
@@ -156,7 +156,7 @@ Planned responsibility:
 ```mermaid
 sequenceDiagram
   participant U as User
-  participant W as Next.js UI
+  participant W as Streamlit UI
   participant A as FastAPI Gateway
   participant O as Ollama
 
@@ -174,7 +174,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   participant U as User
-  participant W as Next.js UI
+  participant W as Streamlit UI
   participant A as FastAPI Gateway
   participant R as RBAC
   participant G as Guardrails/PII
