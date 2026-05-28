@@ -230,6 +230,8 @@ docker compose -f compose.yml up --build
 
 詳細は `docs/roadmap.md` を参照してください。
 
+実装済み M1 のファイル構成、関数・クラスの接続関係、Docker Compose / devcontainer / pytest / Streamlit の使い方は `docs/implementation.md` にまとめています。
+
 - [x] M1: UI/API/Ollama/Compose の basic path
 - [ ] M2: guardrails、PII masking、audit logging baseline
 - [ ] M3: RAG ingestion/retrieval/citations
