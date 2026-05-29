@@ -1,7 +1,8 @@
 from time import perf_counter
 from uuid import uuid4
 
-from fastapi import FastAPI
+import httpx
+from fastapi import FastAPI, HTTPException
 
 from closed_llm_platform.audit import create_chat_audit_event, write_audit_event_jsonl
 from closed_llm_platform.config import settings
@@ -25,7 +26,27 @@ async def chat(request: ChatRequest) -> ChatResponse:
     guardrail = inspect_prompt(request.message)
     redacted_prompt = mask_pii(request.message)
 
-    message = await generate_ollama_response(request.message)
+    try:
+        message = await generate_ollama_response(request.message)
+    except httpx.HTTPError as exc:
+        latency_ms = int((perf_counter() - started) * 1000)
+        audit_event = create_chat_audit_event(
+            request_id=request_id,
+            model=settings.ollama_model,
+            prompt=request.message,
+            response=None,
+            redacted_prompt=redacted_prompt,
+            redacted_response=None,
+            guardrail=guardrail,
+            latency_ms=latency_ms,
+            outcome="ollama_error",
+        )
+        write_audit_event_jsonl(audit_event, settings.audit_log_path)
+        raise HTTPException(
+            status_code=502,
+            detail="Ollama request failed; check OLLAMA_BASE_URL and OLLAMA_MODEL.",
+        ) from exc
+
     redacted_response = mask_pii(message)
     latency_ms = int((perf_counter() - started) * 1000)
     audit_event = create_chat_audit_event(

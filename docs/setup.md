@@ -48,7 +48,7 @@ Important variables:
 
 ```text
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2
+OLLAMA_MODEL=qwen3:8b
 API_BASE_URL=http://localhost:8000
 UI_LANGUAGE=ja
 AUDIT_LOG_PATH=outputs/audit/events.jsonl
@@ -66,7 +66,7 @@ M1/M2 assumes Ollama runs on the host machine.
 
 ```bash
 ollama serve
-ollama pull llama3.2
+ollama pull qwen3:8b
 curl -s http://localhost:11434/api/tags
 ```
 

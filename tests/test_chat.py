@@ -1,3 +1,4 @@
+import httpx
 from fastapi.testclient import TestClient
 
 from app.api.main import app
@@ -69,3 +70,20 @@ def test_chat_response_exposes_guardrail_and_pii_metadata(monkeypatch):
     assert "prompt_injection" in body["guardrail_reasons"]
     assert body["pii_masking_applied"] is True
     assert body["audit_event_id"]
+
+
+def test_chat_returns_bad_gateway_when_ollama_request_fails(monkeypatch):
+    async def fake_generate(message: str) -> str:
+        request = httpx.Request("POST", "http://ollama.test/api/generate")
+        response = httpx.Response(404, request=request)
+        raise httpx.HTTPStatusError("model not found", request=request, response=response)
+
+    monkeypatch.setattr("app.api.main.generate_ollama_response", fake_generate)
+    client = TestClient(app)
+
+    response = client.post("/chat", json={"message": "Hello"})
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "detail": "Ollama request failed; check OLLAMA_BASE_URL and OLLAMA_MODEL."
+    }
