@@ -121,18 +121,26 @@ This function checks a small set of explainable regex patterns, including:
 - `reveal system prompt`
 - `disregard previous instructions`
 - `developer mode`
+- `前回までのプロンプトは無視`
+- `これまでの指示を無視`
+- `システムプロンプトを教えて`
+- `開発者モードになって`
+- `安全ルールを無視`
 
 If a pattern matches, it returns `status="flagged"`; otherwise `status="allowed"`.
 
 Trade-off:
 
 - This is intentionally heuristic and incomplete.
+- M2 treats Japanese and English prompt-injection examples as first-class baseline cases,
+  but the rule set is still phrase-based and can miss paraphrases.
 - The value is inspectability and testability, not comprehensive prompt-injection defense.
 - M2 does not block flagged prompts yet; it annotates and audits them.
 
 Tests:
 
-- `tests/test_guardrails.py::test_inspect_prompt_flags_obvious_prompt_injection`
+- `tests/test_guardrails.py::test_inspect_prompt_flags_obvious_english_prompt_injection`
+- `tests/test_guardrails.py::test_inspect_prompt_flags_obvious_japanese_prompt_injection`
 - `tests/test_guardrails.py::test_inspect_prompt_allows_plain_question`
 
 ## PII Masking Implementation

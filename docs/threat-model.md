@@ -89,8 +89,8 @@ The UI should not be trusted to enforce security rules by itself. Ollama should 
 
 | Threat | Example | M2 position | Later control |
 |--------|---------|-------------|---------------|
-| Prompt injection | User says "ignore previous instructions" | M2 flags obvious phrases and records decision | Stronger checks, prompt separation, blocking/escalation policy, regression examples |
-| RAG injection | Retrieved doc contains malicious instructions | Not in M1 | Treat retrieved text as data, citations, guardrail review |
+| Prompt injection | User says "ignore previous instructions" or "前回までのプロンプトは無視して" | M2 flags obvious Japanese/English phrases and records decision | Severity levels, block/warn/annotate policy, bilingual corpus, rule + optional LLM classifier |
+| RAG injection | Retrieved doc contains malicious instructions | Not in M2 | Treat retrieved text as untrusted data, citations, indirect injection detection, system/user/retrieved context separation |
 | PII leakage | Raw email/phone/token appears in logs | M2 masks basic PII in audit summaries | Stronger PII detection and review workflow |
 | Audit log leakage | Logs store full prompts with secrets | M2 stores hashes and redacted summaries in local JSONL | Durable store, access control, retention policy |
 | Unauthorized access | User reads admin/audit data | No RBAC in M1 | user/admin/auditor roles and route enforcement |
@@ -127,12 +127,15 @@ Risk:
 M2:
 
 - Keep prompt construction simple and inspectable.
-- Add heuristic prompt injection tests for obvious examples.
+- Add heuristic prompt injection tests for obvious Japanese and English examples.
 - Record guardrail decisions in chat response metadata and audit events.
 
 Later:
 
 - Separate system instructions, user prompt, and retrieved context.
+- Add a bilingual injection corpus, severity levels, and block/warn/annotate policy.
+- Detect indirect prompt injection signals in retrieved RAG text before composing prompts.
+- Compare rule-based checks with an optional LLM-based classifier, without making the classifier a hidden single point of failure.
 - Consider dependency pinning and reproducible builds.
 
 ### Repudiation

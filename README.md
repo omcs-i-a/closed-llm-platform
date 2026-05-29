@@ -75,6 +75,7 @@ flowchart LR
 ### M2: Gateway policy and accountability baseline
 
 - prompt injection heuristic baseline
+- Japanese and English prompt injection heuristic baseline
 - PII masking/redaction baseline for audit metadata
 - audit event schema
 - local JSONL audit persistence
@@ -82,8 +83,8 @@ flowchart LR
 
 ### Later milestones
 
-- M3: sample documents、ingestion、retrieval、citations 付き RAG
-- M4: RBAC、document-level access boundary、observability/tracing experiment
+- M3: sample documents、ingestion、retrieval、citations 付き RAG、retrieved text 内の indirect prompt injection 検知
+- M4: RBAC、document-level access boundary、observability/tracing、severity level、block/warn/annotate policy
 
 ## Tech Stack
 
@@ -243,8 +244,8 @@ docker compose -f compose.yml up --build
 
 - [x] M1: UI/API/Ollama/Compose の basic path
 - [x] M2: guardrails、PII masking、audit logging baseline
-- [ ] M3: RAG ingestion/retrieval/citations
-- [ ] M4: RBAC and observability
+- [ ] M3: RAG ingestion/retrieval/citations and indirect prompt injection detection for retrieved text
+- [ ] M4: RBAC, observability, severity levels, and block/warn/annotate guardrail policy
 
 ## References
 

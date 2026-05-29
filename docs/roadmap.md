@@ -150,6 +150,7 @@ Understand how a gateway can become a policy and accountability layer instead of
 ### Scope
 
 - Prompt injection heuristic baseline
+- Japanese and English prompt injection heuristic baseline
 - PII masking/redaction baseline
 - Audit log schema
 - Request/response metadata logging
@@ -167,6 +168,7 @@ src/closed_llm_platform/guardrails.py
 
 - [x] Chat request passes through a visible guardrail decision step.
 - [x] Obvious injection examples are flagged or annotated.
+- [x] Obvious Japanese and English injection examples are covered by tests.
 - [x] Basic PII examples are masked before audit persistence.
 - [x] Audit event schema is documented.
 - [x] Logs avoid raw secrets and unnecessary PII.
@@ -201,6 +203,9 @@ Understand how retrieval changes the safety, permissions, and answer-quality pro
 - Retrieval path
 - Answer citations
 - Clear representation of retrieved context in audit logs
+- Japanese and English injection corpus for user prompts and retrieved text
+- Indirect prompt injection detection for retrieved RAG text
+- Strong prompt construction separation between system instructions, user input, and retrieved context
 
 ### Acceptance Criteria
 
@@ -208,6 +213,8 @@ Understand how retrieval changes the safety, permissions, and answer-quality pro
 - Chat can optionally answer using retrieved context.
 - Response includes citations or document references.
 - Prompt construction separates user instructions from retrieved content.
+- Retrieved text is treated as untrusted data and checked for indirect prompt injection signals.
+- Japanese and English injection corpus examples are included in RAG safety tests.
 - Threat model is updated for RAG-specific risks.
 
 ## M4: RBAC and Observability
@@ -223,6 +230,9 @@ Understand how access control and operational visibility affect LLM platform des
 - Document-level access boundary for RAG
 - Local observability/tracing experiment
 - Audit review path
+- Severity levels for guardrail decisions
+- Block / warn / annotate policy for guardrail outcomes
+- Rule-based classifier plus optional LLM-based classifier comparison
 
 ### Acceptance Criteria
 
@@ -230,6 +240,8 @@ Understand how access control and operational visibility affect LLM platform des
 - User/admin/auditor capabilities are documented and enforced in at least one endpoint.
 - RAG retrieval respects document access metadata.
 - Audit events can be inspected by the appropriate role.
+- Guardrail decisions expose severity and policy action.
+- Block / warn / annotate behavior is documented and tested for representative Japanese and English cases.
 - README documents operational limitations.
 
 ## Later Ideas
@@ -238,7 +250,7 @@ Only consider after M1-M4 are working and documented.
 
 - Regression prompt suite
 - Offline evaluation examples
-- Better prompt injection benchmark cases
+- Better prompt injection benchmark cases beyond the initial Japanese/English corpus
 - Langfuse or local tracing integration
 - Model comparison via multiple Ollama models
 - Admin UI for audit and settings
