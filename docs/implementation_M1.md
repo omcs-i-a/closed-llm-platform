@@ -51,24 +51,23 @@ M1 でまだ実装しないもの:
 ## System Flow
 
 M1 の runtime flow は次の通りです。
-
 ```mermaid
 flowchart LR
-  User[User / Browser] -->|opens localhost:8501| Streamlit[Streamlit UI\napp/streamlit/main.py]
-  Streamlit -->|renders page| BrowserRender[Streamlit rendered page]
-  Streamlit -->|POST /chat JSON\nhttpx.post| API[FastAPI Gateway\napp/api/main.py]
+  User["User / Browser"] -->|"opens localhost:8501"| Streamlit["Streamlit UI<br/>app/streamlit/main.py"]
+  Streamlit -->|"renders page"| BrowserRender["Streamlit rendered page"]
+  Streamlit -->|"POST /chat JSON<br/>httpx.post"| API["FastAPI Gateway<br/>app/api/main.py"]
   BrowserRender --> User
 
-  API -->|validates request| ChatRequest[ChatRequest\nsrc/closed_llm_platform/schemas.py]
-  API -->|calls| OllamaClient[generate_ollama_response()\nsrc/closed_llm_platform/ollama_client.py]
-  OllamaClient -->|reads| Settings[settings\nsrc/closed_llm_platform/config.py]
-  Settings -->|OLLAMA_BASE_URL / OLLAMA_MODEL| Env[.env or environment variables]
-  OllamaClient -->|POST /api/generate| Ollama[Ollama host service\nlocalhost:11434]
-  Ollama -->|JSON response field| OllamaClient
-  OllamaClient -->|extract_ollama_message()| API
-  API -->|ChatResponse| Streamlit
-  Streamlit -->|display message/model/request_id| User
-```
+  API -->|"validates request"| ChatRequest["ChatRequest<br/>src/closed_llm_platform/schemas.py"]
+  API -->|"calls"| OllamaClient["generate_ollama_response()<br/>src/closed_llm_platform/ollama_client.py"]
+  OllamaClient -->|"reads"| Settings["settings<br/>src/closed_llm_platform/config.py"]
+  Settings -->|"OLLAMA_BASE_URL / OLLAMA_MODEL"| Env[".env or environment variables"]
+  OllamaClient -->|"POST /api/generate"| Ollama["Ollama host service<br/>localhost:11434"]
+  Ollama -->|"JSON response field"| OllamaClient
+  OllamaClient -->|"extract_ollama_message()"| API
+  API -->|"ChatResponse"| Streamlit
+  Streamlit -->|"display message/model/request_id"| User
+  ```
 
 ## Container / Compose Flow
 
@@ -684,14 +683,16 @@ The current connection points are intentionally simple:
 
 ```mermaid
 flowchart LR
-  Chat[app.api.main chat()] --> Guardrails[Future guardrails.py]
-  Chat --> Privacy[Future privacy.py]
-  Chat --> Audit[Future audit.py]
-  Chat --> Ollama[generate_ollama_response()]
+  Chat["FastAPI chat endpoint<br/>app.api.main chat()"]
 
-  Guardrails --> Decision[guardrail_decision]
-  Privacy --> Redacted[redacted prompt / metadata]
-  Audit --> Event[audit event JSONL or DB]
+  Chat --> Guardrails["Guardrails module<br/>future guardrails.py"]
+  Chat --> Privacy["Privacy module<br/>future privacy.py"]
+  Chat --> Audit["Audit module<br/>future audit.py"]
+  Chat --> Ollama["Ollama client<br/>generate_ollama_response()"]
+
+  Guardrails --> Decision["Guardrail decision"]
+  Privacy --> Redacted["Redacted prompt / metadata"]
+  Audit --> Event["Audit event<br/>JSONL or DB"]
 ```
 
 Likely M2 files:

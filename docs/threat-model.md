@@ -1,8 +1,8 @@
 # Threat Model
 
-This is the initial threat model for the Closed Local LLM Platform as of M1.
+This is the initial threat model for the Closed Local LLM Platform as of M2.
 
-It is intentionally practical and milestone-aware. M1 will not solve every risk, but the design should leave clear places to add controls.
+It is intentionally practical and milestone-aware. M2 will not solve every risk, but the design should leave clear places to add controls.
 
 ## Scope
 
@@ -87,12 +87,12 @@ The UI should not be trusted to enforce security rules by itself. Ollama should 
 
 ## Key Threats and Initial Controls
 
-| Threat | Example | M1 position | Later control |
+| Threat | Example | M2 position | Later control |
 |--------|---------|-------------|---------------|
-| Prompt injection | User says "ignore previous instructions" | Document as known risk | Guardrail checks, prompt separation, regression examples |
+| Prompt injection | User says "ignore previous instructions" | M2 flags obvious phrases and records decision | Stronger checks, prompt separation, blocking/escalation policy, regression examples |
 | RAG injection | Retrieved doc contains malicious instructions | Not in M1 | Treat retrieved text as data, citations, guardrail review |
-| PII leakage | Raw email/phone/token appears in logs | Avoid real data | PII masking before persistence, redacted audit summaries |
-| Audit log leakage | Logs store full prompts with secrets | Avoid logging sensitive content in M1 | Audit schema with redaction and hashes/summaries |
+| PII leakage | Raw email/phone/token appears in logs | M2 masks basic PII in audit summaries | Stronger PII detection and review workflow |
+| Audit log leakage | Logs store full prompts with secrets | M2 stores hashes and redacted summaries in local JSONL | Durable store, access control, retention policy |
 | Unauthorized access | User reads admin/audit data | No RBAC in M1 | user/admin/auditor roles and route enforcement |
 | Document over-retrieval | RAG returns docs outside user scope | Not in M1 | document-level permissions and retrieval filters |
 | Direct model exposure | Ollama accessible from network | Keep local by default | bind to localhost/private network, gateway-only access |
@@ -124,14 +124,15 @@ Risk:
 - User input or retrieved documents may alter prompt intent.
 - Container or dependency tampering may alter API behavior.
 
-M1:
+M2:
 
 - Keep prompt construction simple and inspectable.
+- Add heuristic prompt injection tests for obvious examples.
+- Record guardrail decisions in chat response metadata and audit events.
 
 Later:
 
 - Separate system instructions, user prompt, and retrieved context.
-- Add tests for prompt injection examples.
 - Consider dependency pinning and reproducible builds.
 
 ### Repudiation
@@ -140,14 +141,15 @@ Risk:
 
 - Users or admins can deny actions if no audit event exists.
 
-M1:
+M2:
 
-- No durable audit log yet.
+- Local JSONL audit event baseline exists.
+- Request IDs and audit event IDs are returned by `/chat`.
+- Events record actor placeholder, role placeholder, action, model, timestamps, guardrail decisions, redacted summaries, hashes, and outcome.
 
 Later:
 
-- Add request IDs and audit event schema.
-- Record actor, role, action, model, timestamps, guardrail decisions, and outcome.
+- Add durable/tamper-resistant storage and role-restricted audit review.
 
 ### Information Disclosure
 
@@ -155,15 +157,17 @@ Risk:
 
 - Prompts, model outputs, documents, logs, or environment variables leak.
 
-M1:
+M2:
 
 - Do not commit real data or secrets.
 - Keep local endpoints local.
+- Apply regex PII masking to audit summaries.
+- Store prompt/response hashes instead of full raw prompt/response text in audit events.
 
 Later:
 
-- PII masking/redaction.
-- Audit log minimization.
+- Stronger PII masking/redaction.
+- Audit log minimization and retention policy.
 - RBAC for audit/document access.
 - Avoid direct exposure of Ollama.
 
@@ -278,9 +282,9 @@ Rules:
 - Keep auditor permissions narrow and explicit.
 - Document each endpoint's required role.
 
-## M1 Security Checklist
+## M2 Security Checklist
 
-M1 checklist status:
+M2 checklist status:
 
 - [x] README documents that Ollama runs as a host service for M1.
 - [x] Ollama is not presented as the public user-facing API.
@@ -288,14 +292,25 @@ M1 checklist status:
 - [x] Chat endpoint has basic input validation.
 - [x] No secrets or real personal data are committed.
 - [x] Docker Compose exposes only API and Streamlit ports.
-- [x] README limitations mention that guardrails/RBAC/RAG/audit logging are not complete in M1.
+- [x] README limitations mention that M2 guardrails/PII/audit are learning baselines, not production-grade controls.
+- [x] Chat endpoint returns guardrail status and reasons.
+- [x] Audit event stores redacted summaries and hashes.
+- [x] Generated audit JSONL files are ignored by git.
 
 ## Open Questions
 
 Resolved during M1:
 
 - Ollama is assumed as a host service for M1.
-- M1 keeps request validation minimal; stricter prompt-size limits are deferred to M2.
+- M1 kept request validation minimal; M2 kept the same prompt-size limit and added policy/audit metadata.
 - `POST /chat` uses a minimal request/response schema around `message`, `model`, and `request_id`.
 - Request IDs are included in M1 responses before durable audit logging.
 - uv, `pyproject.toml`, and `uv.lock` are used for reproducibility.
+
+## M2 Residual Risks
+
+- Regex guardrails can miss subtle prompt injection and can false-positive.
+- Flagged prompts are not blocked yet.
+- Regex PII masking is incomplete and not suitable as a compliance control.
+- Local JSONL audit logs are not tamper-resistant.
+- `actor_id` and `role` are placeholders until RBAC/auth is introduced.

@@ -1,8 +1,8 @@
 # Architecture
 
-This document describes the current M1 architecture for the Closed Local LLM Platform and the staged direction for later milestones.
+This document describes the current M2 architecture for the Closed Local LLM Platform and the staged direction for later milestones.
 
-The architecture is intentionally staged. M1 creates the smallest runnable path. Later milestones add security, retrieval, auditability, and access control.
+The architecture is intentionally staged. M1 created the smallest runnable path. M2 adds a first gateway policy/accountability layer. Later milestones add retrieval, stronger security, and access control.
 
 ## Goals
 
@@ -12,22 +12,22 @@ The architecture is intentionally staged. M1 creates the smallest runnable path.
 - Keep the first implementation small enough to run and verify locally.
 - Document design trade-offs as the system evolves.
 
-## Non-Goals for M1
+## Non-Goals for M2
 
-M1 will not implement:
+M2 will not implement:
 
 - production authentication
 - full RBAC
 - full RAG ingestion/retrieval
-- durable audit log storage
+- database-backed or tamper-resistant audit storage
 - advanced prompt injection detection
 - production-grade PII detection
 - model evaluation framework
 - external deployment
 
-Those are intentionally deferred so the basic UI/API/Ollama path can work first.
+Those are intentionally deferred so the gateway policy baseline stays small and inspectable.
 
-## M1 Logical Architecture
+## M2 Logical Architecture
 
 ```mermaid
 flowchart LR
@@ -35,12 +35,15 @@ flowchart LR
   UI -->|HTTP JSON| API[FastAPI Gateway]
   API -->|GET /health| Health[Health Handler]
   API -->|POST /chat| Chat[Chat Handler]
+  Chat --> Guardrails[Guardrails heuristic]
+  Chat --> Privacy[PII masking for audit metadata]
+  Chat --> Audit[Local JSONL audit events]
   Chat -->|HTTP API| Ollama[Ollama Local Runtime]
   Ollama -->|LLM response| Chat
   Chat -->|JSON response| UI
 ```
 
-M1 uses Streamlit for the UI entrypoint. Next.js can be revisited in a later UI milestone if a richer frontend is useful.
+M2 still uses Streamlit for the UI entrypoint. Next.js can be revisited in a later UI milestone if a richer frontend is useful.
 
 ## M1 Container / Runtime View
 
@@ -71,11 +74,11 @@ Compose-managed Ollama is intentionally deferred.
 
 ### Streamlit UI
 
-M1 responsibility:
+M2 responsibility:
 
 - Render a minimal chat interface.
 - Send a prompt to the FastAPI gateway.
-- Display the response, model name, request ID, or error state.
+- Display the response, model name, request ID, audit event ID, guardrail status, and PII masking metadata.
 
 Later responsibility:
 
@@ -87,12 +90,15 @@ Next.js was part of the initial sketch, but M1 now uses Streamlit to match the r
 
 ### FastAPI Gateway
 
-M1 responsibility:
+M2 responsibility:
 
 - Expose `GET /health`.
-- Expose a basic chat endpoint.
+- Expose a chat endpoint.
+- Inspect prompts with a visible guardrail decision step.
+- Mask PII in audit summaries.
+- Write local JSONL audit events.
 - Call Ollama using a configured base URL and model name.
-- Return structured JSON responses.
+- Return structured JSON responses with M2 metadata.
 
 Later responsibility:
 
@@ -117,13 +123,18 @@ Later responsibility:
 
 Ollama should not be exposed as the main user-facing API. The FastAPI gateway is the control point.
 
-### Future Guardrails Package
+### Guardrails Package
 
-Planned responsibility:
+M2 responsibility:
 
 - Detect obvious prompt injection patterns.
-- Separate user instructions from retrieved document content.
 - Produce inspectable guardrail decisions.
+- Return guardrail status/reasons through `/chat`.
+
+Later responsibility:
+
+- Separate user instructions from retrieved document content.
+- Decide whether and how flagged prompts should be blocked or escalated.
 
 This should be simple and explainable first. Avoid an opaque policy engine until the project needs it.
 
@@ -139,30 +150,39 @@ Planned responsibility:
 
 RAG should integrate with RBAC later, so retrieval must eventually consider document permissions.
 
-### Future Audit Store
+### Audit Baseline
 
-Planned responsibility:
+M2 responsibility:
 
-- Record request metadata, actor, role, action, model, timestamps, guardrail decisions, document IDs, and outcome.
-- Avoid storing raw secrets or unnecessary PII.
+- Record request metadata, actor placeholder, role placeholder, action, model, timestamps, guardrail decisions, hashes, redacted summaries, PII types, and outcome.
+- Avoid storing raw secrets or unnecessary PII in audit summaries.
+
+Later responsibility:
+
 - Support auditor/admin review.
+- Move from local JSONL to a durable store if needed.
 
-## Data Flow: M1 Chat
+## Data Flow: M2 Chat
 
 ```mermaid
 sequenceDiagram
   participant U as User
   participant W as Streamlit UI
   participant A as FastAPI Gateway
+  participant G as Guardrails/PII
   participant O as Ollama
+  participant L as Audit JSONL
 
   U->>W: Type message
   W->>A: POST /chat {message}
-  A->>A: Validate minimal request shape
+  A->>A: Validate request shape
+  A->>G: Inspect prompt and mask audit summary
   A->>O: Generate response
   O-->>A: Model output
-  A-->>W: {message, model, request_id?}
-  W-->>U: Display response
+  A->>G: Mask response audit summary
+  A->>L: Write audit event
+  A-->>W: {message, model, request_id, guardrail_status, pii_masking_applied, audit_event_id}
+  W-->>U: Display response and metadata
 ```
 
 ## Data Flow: Later Secured/RAG Chat
@@ -219,7 +239,7 @@ Future boundaries:
 - local-only Ollama access
 - sanitized logs
 
-## M1 Acceptance Criteria Mapping
+## M2 Acceptance Criteria Mapping
 
 | Requirement | Architecture implication |
 |-------------|--------------------------|
@@ -229,13 +249,23 @@ Future boundaries:
 | `/health` endpoint | API health handler |
 | Docker Compose wiring | `compose.yml` with local reproducible streamlit + api services |
 | Ollama connection path | API can reach configured host Ollama endpoint |
-| basic chat path | Streamlit -> API -> Ollama -> API -> Streamlit |
+| basic chat path | Streamlit -> API -> guardrails/privacy/audit -> Ollama -> API -> Streamlit |
+| M2 guardrail baseline | `src/closed_llm_platform/guardrails.py` and `/chat` metadata |
+| M2 PII masking baseline | `src/closed_llm_platform/privacy.py` redacts audit summaries |
+| M2 audit logging baseline | `src/closed_llm_platform/audit.py` writes local JSONL events |
 | README with Mermaid architecture | README diagram stays aligned with this file |
 
-## M1 Decisions
+## M1/M2 Decisions
 
 - Ollama runs as host service for M1; Compose-managed Ollama is deferred.
 - `POST /chat` accepts a minimal JSON request with a `message` field and returns `message`, `model`, and `request_id`.
 - uv and src-layout are the Python project standard.
 - Streamlit is the M1 UI; Next.js is deferred.
 - pytest and ruff are the M1 verification baseline.
+
+## M2 Decisions
+
+- M2 annotates prompt injection signals but does not block prompts yet.
+- M2 masks PII for audit summaries, not before model calls.
+- M2 audit persistence is local JSONL at `outputs/audit/events.jsonl` by default.
+- `actor_id` and `role` remain placeholders until RBAC/auth is introduced.

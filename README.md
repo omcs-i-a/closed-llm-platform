@@ -4,7 +4,7 @@ Hermes Agent と一緒に、closed/local LLM platform の設計と実装を段�
 
 このプロジェクトでは、FastAPI gateway、Streamlit UI、Ollama によるローカル推論、RAG、guardrails、PII masking、audit logging、RBAC を、小さな runnable milestone に分けて実装しながら学びます。
 
-現時点では M1 の最小実装として、FastAPI health/chat path、Streamlit UI、uv project、Dockerfile、compose.yml を実装し、Docker Compose と host Ollama で検証しています。
+現時点では M2 まで実装済みです。M1 の FastAPI health/chat path、Streamlit UI、uv project、Dockerfile、compose.yml に加えて、M2 の prompt injection heuristic、PII masking baseline、local JSONL audit logging を実装しています。UI は日本語を既定表示とし、英語表示にも切り替えられます。
 
 ## Why This Project Matters
 
@@ -20,7 +20,7 @@ LLM アプリケーションを closed network や local-first な環境で扱�
 
 ## Architecture
 
-M1 で目指す最小構成です。M2 以降の要素も、拡張先として点線で示しています。
+M2 までの現在構成です。M3 以降の要素は、拡張先として点線で示しています。
 
 ```mermaid
 flowchart LR
@@ -28,15 +28,15 @@ flowchart LR
   UI --> API[FastAPI Gateway]
   API --> Health[GET /health]
   API --> Chat[POST /chat]
+  Chat --> Guardrails[Guardrails\nPrompt injection heuristic]
+  Chat --> PIIMasking[PII Masking\nfor audit summaries]
+  Chat --> AuditLog[Audit Logging\nlocal JSONL]
   Chat --> Ollama[Ollama Local LLM]
   Ollama --> Chat
   Chat --> API
   API --> UI
 
-  subgraph Future[M2+ / M3+ / M4+]
-    Guardrails[Guardrails\nPrompt injection checks]
-    PIIMasking[PII Masking]
-    AuditLog[Audit Logging]
+  subgraph Future[M3+ / M4+]
     RAG[RAG Retrieval + Citations]
     RBAC[RBAC\nuser/admin/auditor]
     VectorStore[Vector Store]
@@ -44,10 +44,10 @@ flowchart LR
   end
 
   API -. later .-> RBAC
-  API -. later .-> Guardrails
-  API -. later .-> PIIMasking
+  API --> Guardrails
+  API --> PIIMasking
   API -. later .-> RAG
-  API -. later .-> AuditLog
+  API --> AuditLog
   RAG -. later .-> VectorStore
   AuditLog -. later .-> Postgres
 ```
@@ -58,7 +58,7 @@ flowchart LR
 - FastAPI gateway は、UI と local model runtime の間に置く制御点です。将来の guardrails、PII masking、RAG、RBAC、audit logging をここに集約します。
 - Ollama は local inference runtime として使います。M1 では接続経路を作り、モデル選択や運用上の制約は README と docs に明記します。
 - Docker Compose は、開発者が同じ構成を再現しやすくするために使います。M1 では UI/API wiring を優先し、Ollama を compose 内に含めるか host prerequisite とするかは実装時に明確化します。
-- セキュリティ機能は最初から設計上の場所を確保しますが、M1 では過剰実装しません。まず health check と basic chat path を通します。
+- M2 では gateway に guardrails、PII masking、audit logging の最小制御点を追加します。ただし production-grade security ではなく、設計上どこに置くべきかを学ぶための baseline です。
 
 ## Planned Features
 
@@ -72,9 +72,16 @@ flowchart LR
 - basic chat request/response path
 - README with Mermaid architecture
 
+### M2: Gateway policy and accountability baseline
+
+- prompt injection heuristic baseline
+- PII masking/redaction baseline for audit metadata
+- audit event schema
+- local JSONL audit persistence
+- request/response metadata returned by `/chat`
+
 ### Later milestones
 
-- M2: prompt injection guardrails、PII masking baseline、audit log schema、request logging
 - M3: sample documents、ingestion、retrieval、citations 付き RAG
 - M4: RBAC、document-level access boundary、observability/tracing experiment
 
@@ -123,14 +130,14 @@ curl http://localhost:8000/health
 OLLAMA_MODEL=qwen3:8b uv run python scripts/smoke_api.py
 ```
 
-現時点では M1 の FastAPI health/chat path、Streamlit UI、Dockerfile、`compose.yml` の初期実装があります。Ollama は host service prerequisite です。
+現時点では M2 まで実装済みです。Ollama は host service prerequisite です。Audit event は default で `outputs/audit/events.jsonl` に生成されます。
 
 ## API Plan
 
 | Method | Path | Milestone | Description |
 |--------|------|-----------|-------------|
 | GET | `/health` | M1 | API process が起動していることを返す health check |
-| POST | `/chat` | M1 | UI から basic chat request を受け取り Ollama に渡す |
+| POST | `/chat` | M2 | UI から chat request を受け取り、guardrail/PII/audit metadata を付与して Ollama に渡す |
 | POST | `/documents/ingest` | M3 | sample documents を RAG 用に取り込む予定 |
 | GET | `/audit/events` | M4 | auditor/admin 用の audit event 閲覧予定 |
 
@@ -156,6 +163,8 @@ closed-llm-platform/
     roadmap.md
     setup.md
     threat-model.md
+    implementation_M1.md
+    implementation_M2.md
     plans/
   model/
   notebook/
@@ -181,9 +190,9 @@ closed-llm-platform/
 
 詳細は `docs/threat-model.md` にまとめます。初期設計で意識する項目は次の通りです。
 
-- Prompt injection: retrieved documents や user prompt が system/developer intent を上書きしないようにする。
+- Prompt injection: M2 では obvious な injection phrase を heuristic に検出し、metadata/audit に記録する。
 - Data leakage: chat response、logs、RAG citations に不要な情報を出さない。
-- PII handling: 入力、検索対象文書、ログ保存前に masking/redaction の責務を明確にする。
+- PII handling: M2 では audit summary 保存前に regex baseline で masking/redaction する。
 - RBAC: user/admin/auditor の最小ロールから始める。
 - Audit logging: 誰が、いつ、どの操作を、どのモデル/文書に対して行ったかを記録する。
 - Local runtime risk: Ollama endpoint を不用意に外部公開しない。
@@ -202,7 +211,7 @@ closed-llm-platform/
 
 ## Testing / Verification Plan
 
-M1 の最低限の検証コマンドです。
+M2 までの最低限の検証コマンドです。
 
 ```bash
 # API health
@@ -221,8 +230,8 @@ docker compose -f compose.yml up --build
 
 ## Limitations
 
-- 現時点では M1 の最小アプリコードのみがあります。
-- M1 では production-grade authentication、authorization、guardrails、RAG、audit logging はまだ実装しません。
+- 現時点では M2 までの学習用 baseline 実装があります。
+- M2 の guardrails、PII masking、audit logging は production-grade ではありません。
 - Local LLM の品質、速度、メモリ使用量は選択する Ollama model と実行環境に依存します。
 - closed/local design を学ぶための実装であり、実運用のセキュリティ保証を提供するものではありません。
 
@@ -230,10 +239,10 @@ docker compose -f compose.yml up --build
 
 詳細は `docs/roadmap.md` を参照してください。
 
-実装済み M1 のファイル構成、関数・クラスの接続関係、Docker Compose / devcontainer / pytest / Streamlit の使い方は `docs/implementation.md` にまとめています。
+実装済み M1 のファイル構成、関数・クラスの接続関係、Docker Compose / devcontainer / pytest / Streamlit の使い方は `docs/implementation_M1.md` にまとめています。M2 の guardrails / PII masking / audit logging baseline は `docs/implementation_M2.md` にまとめています。
 
 - [x] M1: UI/API/Ollama/Compose の basic path
-- [ ] M2: guardrails、PII masking、audit logging baseline
+- [x] M2: guardrails、PII masking、audit logging baseline
 - [ ] M3: RAG ingestion/retrieval/citations
 - [ ] M4: RBAC and observability
 

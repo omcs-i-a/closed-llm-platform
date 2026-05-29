@@ -4,7 +4,7 @@ This roadmap keeps the project milestone-bound. The first goal is not to build a
 
 ## Current State
 
-Status: M1 implemented and locally verified.
+Status: M2 implemented and locally verified.
 
 Created design targets:
 
@@ -14,8 +14,8 @@ Created design targets:
 - `docs/roadmap.md`
 - `docs/threat-model.md`
 
-M1 now includes a runnable FastAPI gateway, Streamlit UI, Docker/Compose wiring,
-and a host-Ollama chat path. The current verified model for local smoke testing is
+M1 includes a runnable FastAPI gateway, Streamlit UI, Docker/Compose wiring,
+and a host-Ollama chat path. M2 adds prompt injection heuristics, PII masking for audit summaries, and local JSONL audit events. The current verified model for local smoke testing is
 `qwen3:8b`; change `OLLAMA_MODEL` if your local Ollama runtime uses another model.
 
 ## Milestone Principles
@@ -158,7 +158,6 @@ Understand how a gateway can become a policy and accountability layer instead of
 ### Possible Components
 
 ```text
-packages/guardrails/
 src/closed_llm_platform/audit.py
 src/closed_llm_platform/privacy.py
 src/closed_llm_platform/guardrails.py
@@ -166,11 +165,11 @@ src/closed_llm_platform/guardrails.py
 
 ### Acceptance Criteria
 
-- Chat request passes through a visible guardrail decision step.
-- Obvious injection examples are flagged or annotated.
-- Basic PII examples are masked before audit persistence.
-- Audit event schema is documented.
-- Logs avoid raw secrets and unnecessary PII.
+- [x] Chat request passes through a visible guardrail decision step.
+- [x] Obvious injection examples are flagged or annotated.
+- [x] Basic PII examples are masked before audit persistence.
+- [x] Audit event schema is documented.
+- [x] Logs avoid raw secrets and unnecessary PII.
 
 ### Example Audit Fields
 
