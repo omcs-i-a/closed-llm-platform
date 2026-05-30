@@ -50,6 +50,7 @@ M2 でまだ実装しないもの:
 M2 の runtime flow は次の通りです。
 
 ```mermaid
+
 flowchart LR
   User["User / Browser"] --> Streamlit["Streamlit UI\napp/streamlit/main.py"]
   Streamlit -->|"POST /chat"| API["FastAPI Gateway\napp/api/main.py"]
@@ -65,6 +66,7 @@ flowchart LR
   Audit -->|"write_audit_event_jsonl()"| AuditFile["outputs/audit/events.jsonl\nlocal generated JSONL"]
   API -->|"ChatResponse + M2 metadata"| Streamlit
   Streamlit --> User
+
 ```
 
 Important M2 choice:
@@ -76,6 +78,7 @@ Important M2 choice:
 ## Request / Response Sequence
 
 ```mermaid
+
 sequenceDiagram
   participant U as User
   participant S as Streamlit app/streamlit/main.py
@@ -99,6 +102,7 @@ sequenceDiagram
   A->>L: write_audit_event_jsonl(event, AUDIT_LOG_PATH)
   A-->>S: ChatResponse {message, model, request_id, guardrail_status, pii_masking_applied, audit_event_id}
   S-->>U: Render response and M2 metadata
+
 ```
 
 ## Guardrails Implementation
