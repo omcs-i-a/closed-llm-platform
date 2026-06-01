@@ -26,6 +26,11 @@ class AuditEvent(BaseModel):
     guardrail_reasons: list[str]
     pii_masking_applied: bool
     pii_types: list[str]
+    rag_used: bool = False
+    retrieved_document_ids: list[str] = Field(default_factory=list)
+    citations: list[str] = Field(default_factory=list)
+    retrieval_guardrail_decision: str = "not_applicable"
+    retrieval_guardrail_reasons: list[str] = Field(default_factory=list)
     outcome: str
     latency_ms: int
 
@@ -51,6 +56,11 @@ def create_chat_audit_event(
     guardrail: GuardrailDecision,
     latency_ms: int,
     outcome: str,
+    rag_used: bool = False,
+    retrieved_document_ids: list[str] | None = None,
+    citations: list[str] | None = None,
+    retrieval_guardrail_decision: str = "not_applicable",
+    retrieval_guardrail_reasons: list[str] | None = None,
 ) -> AuditEvent:
     response_pii_types = redacted_response.pii_types if redacted_response else []
     pii_types = list(dict.fromkeys(redacted_prompt.pii_types + response_pii_types))
@@ -67,6 +77,11 @@ def create_chat_audit_event(
         guardrail_reasons=guardrail.reasons,
         pii_masking_applied=bool(pii_types),
         pii_types=pii_types,
+        rag_used=rag_used,
+        retrieved_document_ids=retrieved_document_ids or [],
+        citations=citations or [],
+        retrieval_guardrail_decision=retrieval_guardrail_decision,
+        retrieval_guardrail_reasons=retrieval_guardrail_reasons or [],
         outcome=outcome,
         latency_ms=latency_ms,
     )

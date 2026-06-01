@@ -36,6 +36,31 @@ def test_create_chat_audit_event_uses_hashes_and_redacted_summaries():
     assert "+1-415-555-1212" not in json.dumps(dumped)
 
 
+def test_create_chat_audit_event_records_rag_metadata():
+    event = create_chat_audit_event(
+        request_id="req-rag",
+        model="qwen3:8b",
+        prompt="gateway question",
+        response="gateway answer",
+        redacted_prompt=MaskingResult(text="gateway question", pii_types=[]),
+        redacted_response=MaskingResult(text="gateway answer", pii_types=[]),
+        guardrail=GuardrailDecision(status="allowed", reasons=[], matched_patterns=[]),
+        latency_ms=19,
+        outcome="success",
+        rag_used=True,
+        retrieved_document_ids=["local-gateway"],
+        citations=["Local Gateway (local-gateway.md#chunk-1)"],
+        retrieval_guardrail_decision="flagged",
+        retrieval_guardrail_reasons=["indirect_prompt_injection"],
+    )
+
+    assert event.rag_used is True
+    assert event.retrieved_document_ids == ["local-gateway"]
+    assert event.citations == ["Local Gateway (local-gateway.md#chunk-1)"]
+    assert event.retrieval_guardrail_decision == "flagged"
+    assert event.retrieval_guardrail_reasons == ["indirect_prompt_injection"]
+
+
 def test_write_audit_event_jsonl_appends_one_json_line(tmp_path):
     event = create_chat_audit_event(
         request_id="req-123",

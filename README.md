@@ -4,7 +4,7 @@ Hermes Agent と一緒に、closed/local LLM platform の設計と実装を段�
 
 このプロジェクトでは、FastAPI gateway、Streamlit UI、Ollama によるローカル推論、RAG、guardrails、PII masking、audit logging、RBAC を、小さな runnable milestone に分けて実装しながら学びます。
 
-現時点では M2 まで実装済みです。M1 の FastAPI health/chat path、Streamlit UI、uv project、Dockerfile、compose.yml に加えて、M2 の prompt injection heuristic、PII masking baseline、local JSONL audit logging を実装しています。UI は日本語を既定表示とし、英語表示にも切り替えられます。
+現時点では M3 まで実装済みです。M1 の FastAPI health/chat path、M2 の prompt injection heuristic / PII masking / local JSONL audit logging に加えて、M3 の synthetic sample documents、local RAG ingestion/retrieval、citations、retrieved text の indirect prompt injection metadata を実装しています。UI は日本語を既定表示とし、英語表示にも切り替えられます。
 
 ## Why This Project Matters
 
@@ -20,7 +20,7 @@ LLM アプリケーションを closed network や local-first な環境で扱�
 
 ## Architecture
 
-M2 までの現在構成です。M3 以降の要素は、拡張先として点線で示しています。
+M3 までの現在構成です。M4 以降の要素は、拡張先として点線で示しています。
 
 ```mermaid
 flowchart LR
@@ -31,13 +31,14 @@ flowchart LR
   Chat --> Guardrails[Guardrails\nPrompt injection heuristic]
   Chat --> PIIMasking[PII Masking\nfor audit summaries]
   Chat --> AuditLog[Audit Logging\nlocal JSONL]
+  Chat --> RAG[RAG Retrieval\nsynthetic docs + citations]
+  RAG --> RAGIndex[Local RAG Index\noutputs/rag/index.json]
   Chat --> Ollama[Ollama Local LLM]
   Ollama --> Chat
   Chat --> API
   API --> UI
 
-  subgraph Future[M3+ / M4+]
-    RAG[RAG Retrieval + Citations]
+  subgraph Future[M4+]
     RBAC[RBAC\nuser/admin/auditor]
     VectorStore[Vector Store]
     Postgres[(PostgreSQL)]
@@ -46,19 +47,20 @@ flowchart LR
   API -. later .-> RBAC
   API --> Guardrails
   API --> PIIMasking
-  API -. later .-> RAG
+  API --> RAG
   API --> AuditLog
-  RAG -. later .-> VectorStore
+  RAG -. later semantic search .-> VectorStore
   AuditLog -. later .-> Postgres
 ```
 
 ## Why This Design?
 
 - Streamlit UI は、ユーザーが closed/local LLM platform を触る入口として使います。M1 では Python/uv ベースの最小 chat UI に留めます。Next.js は必要になった時点で後続 milestone として検討します。
-- FastAPI gateway は、UI と local model runtime の間に置く制御点です。将来の guardrails、PII masking、RAG、RBAC、audit logging をここに集約します。
+- FastAPI gateway は、UI と local model runtime の間に置く制御点です。guardrails、PII masking、RAG、audit logging をここに集約し、将来の RBAC もここで扱います。
 - Ollama は local inference runtime として使います。M1 では接続経路を作り、モデル選択や運用上の制約は README と docs に明記します。
 - Docker Compose は、開発者が同じ構成を再現しやすくするために使います。M1 では UI/API wiring を優先し、Ollama を compose 内に含めるか host prerequisite とするかは実装時に明確化します。
 - M2 では gateway に guardrails、PII masking、audit logging の最小制御点を追加します。ただし production-grade security ではなく、設計上どこに置くべきかを学ぶための baseline です。
+- M3 では synthetic documents と local JSON index による小さな RAG path を追加します。retrieved context は untrusted data として扱い、citations と indirect prompt injection metadata を返します。
 
 ## Planned Features
 
@@ -81,9 +83,18 @@ flowchart LR
 - local JSONL audit persistence
 - request/response metadata returned by `/chat`
 
+### M3: Local RAG with citations
+
+- synthetic sample documents
+- reproducible ingestion into `outputs/rag/index.json`
+- lexical retrieval baseline
+- citations in `/chat` responses
+- retrieved document IDs and retrieval guardrail metadata in audit events
+- indirect prompt injection detection for retrieved text
+- separated prompt construction for system instructions, user input, and retrieved context
+
 ### Later milestones
 
-- M3: sample documents、ingestion、retrieval、citations 付き RAG、retrieved text 内の indirect prompt injection 検知
 - M4: RBAC、document-level access boundary、observability/tracing、severity level、block/warn/annotate policy
 
 ## Tech Stack
@@ -96,9 +107,9 @@ flowchart LR
 - Dependency management: uv with `pyproject.toml` and `uv.lock`
 - Infra: Docker, `compose.yml`, VS Code devcontainer
 - Testing: pytest, ruff
-- RAG: planned vector store and retrieval layer
+- RAG: local JSON index and lexical retrieval baseline in M3; vector store planned later
 - Data/audit: planned PostgreSQL or local durable store
-- Security controls: planned guardrails, PII masking, RBAC, audit logging
+- Security controls: M2 guardrails/PII/audit baseline, M3 retrieved-context checks, planned RBAC
 
 ## Quick Start
 
@@ -127,24 +138,27 @@ OLLAMA_MODEL=qwen3:8b docker compose -f compose.yml up --build
 # health check
 curl http://localhost:8000/health
 
+# ingest sample docs for RAG
+uv run python scripts/ingest_documents.py
+
 # chat smoke test
 OLLAMA_MODEL=qwen3:8b uv run python scripts/smoke_api.py
 ```
 
-現時点では M2 まで実装済みです。Ollama は host service prerequisite です。Audit event は default で `outputs/audit/events.jsonl` に生成されます。
+現時点では M3 まで実装済みです。Ollama は host service prerequisite です。Audit event は default で `outputs/audit/events.jsonl` に生成されます。RAG index は `uv run python scripts/ingest_documents.py` で `outputs/rag/index.json` に生成されます。
 
 ## API Plan
 
 | Method | Path | Milestone | Description |
 |--------|------|-----------|-------------|
 | GET | `/health` | M1 | API process が起動していることを返す health check |
-| POST | `/chat` | M2 | UI から chat request を受け取り、guardrail/PII/audit metadata を付与して Ollama に渡す |
-| POST | `/documents/ingest` | M3 | sample documents を RAG 用に取り込む予定 |
+| POST | `/chat` | M3 | UI から chat request を受け取り、optional RAG、guardrail/PII/audit metadata を付与して Ollama に渡す |
+| POST | `/documents/ingest` | M3 | synthetic sample documents を local RAG index に取り込む |
 | GET | `/audit/events` | M4 | auditor/admin 用の audit event 閲覧予定 |
 
 ## Project Structure
 
-M1 実装後の想定構成です。
+M3 実装後の現在構成です。
 
 ```text
 closed-llm-platform/
@@ -166,6 +180,7 @@ closed-llm-platform/
     threat-model.md
     implementation_M1.md
     implementation_M2.md
+    implementation_M3.md
     plans/
   model/
   notebook/
@@ -195,7 +210,7 @@ closed-llm-platform/
 - Data leakage: chat response、logs、RAG citations に不要な情報を出さない。
 - PII handling: M2 では audit summary 保存前に regex baseline で masking/redaction する。
 - RBAC: user/admin/auditor の最小ロールから始める。
-- Audit logging: 誰が、いつ、どの操作を、どのモデル/文書に対して行ったかを記録する。
+- Audit logging: 誰が、いつ、どの操作を、どのモデル/文書に対して行ったかを、PII を抑えた metadata として記録する。
 - Local runtime risk: Ollama endpoint を不用意に外部公開しない。
 - Supply chain risk: frontend/backend/container dependencies を明示し、不要な依存を増やさない。
 
@@ -212,7 +227,7 @@ closed-llm-platform/
 
 ## Testing / Verification Plan
 
-M2 までの最低限の検証コマンドです。
+M3 までの最低限の検証コマンドです。
 
 ```bash
 # API health
@@ -221,6 +236,9 @@ curl -i http://localhost:8000/health
 # Python tests and lint
 uv run pytest -q
 uv run ruff check .
+
+# RAG ingestion
+uv run python scripts/ingest_documents.py
 
 # Streamlit UI
 uv run streamlit run app/streamlit/main.py
@@ -231,8 +249,9 @@ docker compose -f compose.yml up --build
 
 ## Limitations
 
-- 現時点では M2 までの学習用 baseline 実装があります。
+- 現時点では M3 までの学習用 baseline 実装があります。
 - M2 の guardrails、PII masking、audit logging は production-grade ではありません。
+- M3 の RAG は lexical retrieval baseline であり、semantic vector search や document-level RBAC は未実装です。
 - Local LLM の品質、速度、メモリ使用量は選択する Ollama model と実行環境に依存します。
 - closed/local design を学ぶための実装であり、実運用のセキュリティ保証を提供するものではありません。
 
@@ -240,11 +259,11 @@ docker compose -f compose.yml up --build
 
 詳細は `docs/roadmap.md` を参照してください。
 
-実装済み M1 のファイル構成、関数・クラスの接続関係、Docker Compose / devcontainer / pytest / Streamlit の使い方は `docs/implementation_M1.md` にまとめています。M2 の guardrails / PII masking / audit logging baseline は `docs/implementation_M2.md` にまとめています。
+実装済み M1 のファイル構成、関数・クラスの接続関係、Docker Compose / devcontainer / pytest / Streamlit の使い方は `docs/implementation_M1.md` にまとめています。M2 の guardrails / PII masking / audit logging baseline は `docs/implementation_M2.md` に、M3 の local RAG baseline は `docs/implementation_M3.md` にまとめています。
 
 - [x] M1: UI/API/Ollama/Compose の basic path
 - [x] M2: guardrails、PII masking、audit logging baseline
-- [ ] M3: RAG ingestion/retrieval/citations and indirect prompt injection detection for retrieved text
+- [x] M3: RAG ingestion/retrieval/citations and indirect prompt injection detection for retrieved text
 - [ ] M4: RBAC, observability, severity levels, and block/warn/annotate guardrail policy
 
 ## References

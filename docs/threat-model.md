@@ -1,8 +1,8 @@
 # Threat Model
 
-This is the initial threat model for the Closed Local LLM Platform as of M2.
+This is the threat model for the Closed Local LLM Platform as of M3.
 
-It is intentionally practical and milestone-aware. M2 will not solve every risk, but the design should leave clear places to add controls.
+It is intentionally practical and milestone-aware. M3 does not solve every risk, but the design leaves clear places to add controls.
 
 ## Scope
 
@@ -12,10 +12,10 @@ In scope:
 - FastAPI gateway
 - Ollama local runtime connection
 - chat request/response flow
-- future guardrails
-- future PII masking
-- future RAG over synthetic documents
-- future audit logging
+- M2/M3 guardrails baseline
+- M2 PII masking baseline
+- M3 RAG over synthetic documents
+- M2/M3 audit logging
 - future RBAC
 - Docker Compose local development environment
 
@@ -75,8 +75,8 @@ flowchart LR
   User[User / Browser] -->|untrusted input| UI[Streamlit UI]
   UI -->|HTTP request| API[FastAPI Gateway\ncontrol boundary]
   API -->|local model call| Ollama[Ollama Runtime]
-  API -. future .-> Store[(Audit / Vector / DB Stores)]
-  API -. future .-> Docs[Documents]
+  API --> Store[(Audit JSONL / RAG JSON Index)]
+  API --> Docs[Synthetic sample documents]
 ```
 
 Primary control boundary:
@@ -87,14 +87,14 @@ The UI should not be trusted to enforce security rules by itself. Ollama should 
 
 ## Key Threats and Initial Controls
 
-| Threat | Example | M2 position | Later control |
+| Threat | Example | Current position | Later control |
 |--------|---------|-------------|---------------|
 | Prompt injection | User says "ignore previous instructions" or "前回までのプロンプトは無視して" | M2 flags obvious Japanese/English phrases and records decision | Severity levels, block/warn/annotate policy, bilingual corpus, rule + optional LLM classifier |
-| RAG injection | Retrieved doc contains malicious instructions | Not in M2 | Treat retrieved text as untrusted data, citations, indirect injection detection, system/user/retrieved context separation |
+| RAG injection | Retrieved doc contains malicious instructions | M3 treats retrieved text as untrusted data, separates prompt sections, and records indirect injection metadata | M4 severity/action policy; stronger classifiers |
 | PII leakage | Raw email/phone/token appears in logs | M2 masks basic PII in audit summaries | Stronger PII detection and review workflow |
 | Audit log leakage | Logs store full prompts with secrets | M2 stores hashes and redacted summaries in local JSONL | Durable store, access control, retention policy |
 | Unauthorized access | User reads admin/audit data | No RBAC in M1 | user/admin/auditor roles and route enforcement |
-| Document over-retrieval | RAG returns docs outside user scope | Not in M1 | document-level permissions and retrieval filters |
+| Document over-retrieval | RAG returns docs outside user scope | M3 uses only synthetic public sample docs; no per-user document permissions | document-level permissions and retrieval filters |
 | Direct model exposure | Ollama accessible from network | Keep local by default | bind to localhost/private network, gateway-only access |
 | Supply chain risk | malicious npm/Python package | Minimal dependencies | lockfiles, dependency review, CI checks |
 | Hallucination | Model invents facts | Known limitation | citations, uncertainty language, eval prompts |
@@ -124,17 +124,18 @@ Risk:
 - User input or retrieved documents may alter prompt intent.
 - Container or dependency tampering may alter API behavior.
 
-M2:
+M3:
 
 - Keep prompt construction simple and inspectable.
 - Add heuristic prompt injection tests for obvious Japanese and English examples.
 - Record guardrail decisions in chat response metadata and audit events.
+- Separate system instructions, retrieved context, and user question in RAG prompts.
+- Inspect retrieved chunks for indirect prompt injection signals before composing the RAG prompt.
 
 Later:
 
-- Separate system instructions, user prompt, and retrieved context.
-- Add a bilingual injection corpus, severity levels, and block/warn/annotate policy.
-- Detect indirect prompt injection signals in retrieved RAG text before composing prompts.
+- Add severity levels and block/warn/annotate policy.
+- Expand the bilingual injection corpus beyond obvious examples.
 - Compare rule-based checks with an optional LLM-based classifier, without making the classifier a hidden single point of failure.
 - Consider dependency pinning and reproducible builds.
 
@@ -144,11 +145,11 @@ Risk:
 
 - Users or admins can deny actions if no audit event exists.
 
-M2:
+M3:
 
 - Local JSONL audit event baseline exists.
 - Request IDs and audit event IDs are returned by `/chat`.
-- Events record actor placeholder, role placeholder, action, model, timestamps, guardrail decisions, redacted summaries, hashes, and outcome.
+- Events record actor placeholder, role placeholder, action, model, timestamps, guardrail decisions, redacted summaries, hashes, RAG usage, retrieved document IDs, citations, retrieval guardrail metadata, and outcome.
 
 Later:
 
@@ -160,7 +161,7 @@ Risk:
 
 - Prompts, model outputs, documents, logs, or environment variables leak.
 
-M2:
+M3:
 
 - Do not commit real data or secrets.
 - Keep local endpoints local.
@@ -180,7 +181,7 @@ Risk:
 
 - Large prompts or repeated requests overload local model or API.
 
-M1:
+M3:
 
 - Local development only; document limitation.
 
@@ -195,7 +196,7 @@ Risk:
 - A normal user gains admin/auditor access.
 - A prompt tricks the model into revealing restricted data.
 
-M1:
+M3:
 
 - No privileged data or RBAC yet.
 
@@ -243,7 +244,7 @@ PII masking should be explicit about where it is applied:
 - possibly before model calls, depending on use case
 - before displaying admin/auditor views
 
-M2 baseline can start with simple patterns:
+M2 baseline starts with simple patterns:
 
 - email addresses
 - phone numbers
@@ -254,7 +255,7 @@ Limitations must be documented because regex masking is not complete PII protect
 
 ## RAG-Specific Risks
 
-When M3 adds RAG, update this threat model with:
+M3 adds RAG-specific risk handling for:
 
 - malicious instructions inside documents
 - retrieval of documents outside user permissions
@@ -263,12 +264,19 @@ When M3 adds RAG, update this threat model with:
 - embedding/vector store leakage
 - chunking that loses important context
 
-RAG controls should include:
+M3 RAG controls include:
 
 - treating retrieved text as untrusted data
 - explicit citations
 - document IDs in audit events
-- later document-level permission filters
+- separated prompt sections for system instructions, retrieved context, and user question
+- indirect prompt injection metadata for retrieved chunks
+
+Still deferred:
+
+- document-level permission filters
+- semantic vector store leakage controls
+- block/warn/annotate policy for flagged retrieved context
 
 ## RBAC Design Notes
 
@@ -285,9 +293,9 @@ Rules:
 - Keep auditor permissions narrow and explicit.
 - Document each endpoint's required role.
 
-## M2 Security Checklist
+## M3 Security Checklist
 
-M2 checklist status:
+M3 checklist status:
 
 - [x] README documents that Ollama runs as a host service for M1.
 - [x] Ollama is not presented as the public user-facing API.
@@ -299,10 +307,13 @@ M2 checklist status:
 - [x] Chat endpoint returns guardrail status and reasons.
 - [x] Audit event stores redacted summaries and hashes.
 - [x] Generated audit JSONL files are ignored by git.
+- [x] Synthetic sample documents are committed; generated RAG index files are ignored by git.
+- [x] Retrieved context is separated from system and user prompt sections.
+- [x] Retrieved context indirect injection signals are surfaced in response/audit metadata.
 
 ## Open Questions
 
-Resolved during M1:
+Resolved during M1-M3:
 
 - Ollama is assumed as a host service for M1.
 - M1 kept request validation minimal; M2 kept the same prompt-size limit and added policy/audit metadata.
@@ -310,10 +321,12 @@ Resolved during M1:
 - Request IDs are included in M1 responses before durable audit logging.
 - uv, `pyproject.toml`, and `uv.lock` are used for reproducibility.
 
-## M2 Residual Risks
+## M3 Residual Risks
 
 - Regex guardrails can miss subtle prompt injection and can false-positive.
-- Flagged prompts are not blocked yet.
+- Flagged prompts and flagged retrieved chunks are not blocked yet.
 - Regex PII masking is incomplete and not suitable as a compliance control.
 - Local JSONL audit logs are not tamper-resistant.
+- Lexical retrieval is not semantic search and can miss relevant documents.
+- RAG has no document-level RBAC yet.
 - `actor_id` and `role` are placeholders until RBAC/auth is introduced.

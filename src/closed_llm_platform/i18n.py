@@ -16,6 +16,9 @@ class UIText:
     audit_caption_label: str
     guardrail_caption_label: str
     no_guardrail_reasons: str
+    use_rag_label: str
+    citations_heading: str
+    no_citations: str
 
 
 _UI_TEXTS: dict[str, UIText] = {
@@ -39,6 +42,9 @@ _UI_TEXTS: dict[str, UIText] = {
         audit_caption_label="モデル / リクエストID / 監査イベントID",
         guardrail_caption_label="ガードレール / PII masking",
         no_guardrail_reasons="理由なし",
+        use_rag_label="RAG を使用する",
+        citations_heading="引用 / Retrieved context",
+        no_citations="引用はありません",
     ),
     "en": UIText(
         language_name="English",
@@ -60,6 +66,9 @@ _UI_TEXTS: dict[str, UIText] = {
         audit_caption_label="model / request ID / audit event ID",
         guardrail_caption_label="guardrail / PII masking",
         no_guardrail_reasons="no reasons",
+        use_rag_label="Use RAG",
+        citations_heading="Citations",
+        no_citations="No citations",
     ),
 }
 

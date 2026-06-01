@@ -4,7 +4,7 @@ This roadmap keeps the project milestone-bound. The first goal is not to build a
 
 ## Current State
 
-Status: M2 implemented and locally verified.
+Status: M3 implemented and locally verified.
 
 Created design targets:
 
@@ -15,7 +15,7 @@ Created design targets:
 - `docs/threat-model.md`
 
 M1 includes a runnable FastAPI gateway, Streamlit UI, Docker/Compose wiring,
-and a host-Ollama chat path. M2 adds prompt injection heuristics, PII masking for audit summaries, and local JSONL audit events. The current verified model for local smoke testing is
+and a host-Ollama chat path. M2 adds prompt injection heuristics, PII masking for audit summaries, and local JSONL audit events. M3 adds synthetic sample documents, local JSON RAG ingestion/retrieval, citations, and indirect prompt-injection metadata for retrieved text. The current verified model for local smoke testing is
 `qwen3:8b`; change `OLLAMA_MODEL` if your local Ollama runtime uses another model.
 
 ## Milestone Principles
@@ -209,13 +209,13 @@ Understand how retrieval changes the safety, permissions, and answer-quality pro
 
 ### Acceptance Criteria
 
-- Sample documents can be ingested reproducibly.
-- Chat can optionally answer using retrieved context.
-- Response includes citations or document references.
-- Prompt construction separates user instructions from retrieved content.
-- Retrieved text is treated as untrusted data and checked for indirect prompt injection signals.
-- Japanese and English injection corpus examples are included in RAG safety tests.
-- Threat model is updated for RAG-specific risks.
+- [x] Sample documents can be ingested reproducibly.
+- [x] Chat can optionally answer using retrieved context.
+- [x] Response includes citations or document references.
+- [x] Prompt construction separates user instructions from retrieved content.
+- [x] Retrieved text is treated as untrusted data and checked for indirect prompt injection signals.
+- [x] Japanese and English injection corpus examples are included in RAG safety tests.
+- [x] Threat model is updated for RAG-specific risks.
 
 ## M4: RBAC and Observability
 

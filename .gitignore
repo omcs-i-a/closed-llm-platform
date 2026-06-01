@@ -29,6 +29,8 @@ model/*
 !model/.gitkeep
 data/*
 !data/.gitkeep
+!data/sample-docs/
+!data/sample-docs/*.md
 
 # OS/editor
 .DS_Store

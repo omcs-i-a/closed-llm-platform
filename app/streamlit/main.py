@@ -28,13 +28,14 @@ st.caption(text.caption)
 st.info(text.info)
 
 message = st.text_area(text.message_label, placeholder=text.message_placeholder)
+use_rag = st.checkbox(text.use_rag_label, value=False)
 
 if st.button(text.send_button, type="primary", disabled=not message.strip()):
     with st.spinner(text.spinner):
         try:
             response = httpx.post(
                 f"{API_BASE_URL}/chat",
-                json={"message": message.strip()},
+                json={"message": message.strip(), "use_rag": use_rag},
                 timeout=90.0,
             )
             response.raise_for_status()
@@ -53,5 +54,14 @@ if st.button(text.send_button, type="primary", disabled=not message.strip()):
             st.caption(
                 f"{text.guardrail_caption_label}: "
                 f"guardrail={body['guardrail_status']} ({guardrail_reasons}) | "
-                f"pii_masking_applied={body['pii_masking_applied']}"
+                f"pii_masking_applied={body['pii_masking_applied']} | "
+                f"rag_used={body.get('rag_used', False)} | "
+                f"retrieval_guardrail={body.get('retrieval_guardrail_status', 'not_applicable')}"
             )
+            citations = body.get("citations", [])
+            st.subheader(text.citations_heading)
+            if citations:
+                for citation in citations:
+                    st.markdown(f"- {citation}")
+            else:
+                st.caption(text.no_citations)
