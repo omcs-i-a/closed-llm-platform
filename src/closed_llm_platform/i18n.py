@@ -26,12 +26,14 @@ _UI_TEXTS: dict[str, UIText] = {
         language_name="日本語",
         page_title="Closed Local LLM Platform",
         caption=(
-            "M2: 日本語対応 UI -> FastAPI gateway -> "
-            "guardrails/PII/audit -> local Ollama runtime"
+            "M3: 日本語対応 UI -> FastAPI gateway -> "
+            "guardrails/PII/audit -> local RAG -> local Ollama runtime"
         ),
         info=(
-            "M2 では prompt injection の簡易検出、監査メタデータ用の PII masking、"
-            "local JSONL audit event を追加しています。RAG と RBAC は後続 milestone です。"
+            "M3 では prompt injection の簡易検出、監査メタデータ用の PII masking、"
+            "local JSONL audit event に加えて、synthetic documents を使った local RAG、"
+            "citations、retrieved context の indirect prompt injection metadata を追加しています。"
+            "RBAC は後続 milestone です。"
         ),
         message_label="メッセージ",
         message_placeholder="ローカルモデルに短い質問を入力してください...",
@@ -50,12 +52,14 @@ _UI_TEXTS: dict[str, UIText] = {
         language_name="English",
         page_title="Closed Local LLM Platform",
         caption=(
-            "M2: Streamlit UI -> FastAPI gateway -> "
-            "guardrails/PII/audit -> local Ollama runtime"
+            "M3: Streamlit UI -> FastAPI gateway -> "
+            "guardrails/PII/audit -> local RAG -> local Ollama runtime"
         ),
         info=(
-            "M2 adds visible prompt-injection heuristics, basic PII masking for audit metadata, "
-            "and local JSONL audit events. RAG and RBAC are still planned later milestones."
+            "M3 adds visible prompt-injection heuristics, basic PII masking for audit metadata, "
+            "local JSONL audit events, local RAG over synthetic documents, citations, "
+            "and indirect prompt-injection metadata for retrieved context. "
+            "RBAC is still planned later."
         ),
         message_label="Message",
         message_placeholder="Ask the local model a short question...",

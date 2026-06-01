@@ -7,7 +7,8 @@ def test_japanese_ui_text_is_available_by_default():
     assert text.language_name == "日本語"
     assert text.page_title == "Closed Local LLM Platform"
     assert text.send_button == "送信"
-    assert "日本語" in text.caption
+    assert "M3" in text.caption
+    assert "local RAG" in text.caption
     assert "監査イベントID" in text.audit_caption_label
     assert text.use_rag_label == "RAG を使用する"
     assert "引用" in text.citations_heading
@@ -27,5 +28,7 @@ def test_english_ui_text_remains_available():
     assert text.language_name == "English"
     assert text.send_button == "Send"
     assert "audit event ID" in text.audit_caption_label
+    assert "local RAG" in text.caption
+    assert "citations" in text.info
     assert text.use_rag_label == "Use RAG"
     assert text.citations_heading == "Citations"
